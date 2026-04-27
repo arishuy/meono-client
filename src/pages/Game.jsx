@@ -9,6 +9,7 @@ import FavorModal from '../components/FavorModal';
 import FutureModal from '../components/FutureModal';
 import StealModal from '../components/StealModal';
 import GameOverModal from '../components/GameOverModal';
+import CountdownTimer from '../components/CountdownTimer';
 
 export default function Game() {
   const {
@@ -26,6 +27,7 @@ export default function Game() {
     pendingAction,
     toasts,
     explodingKittenCount,
+    turnEndTime,
   } = useGame();
 
   const me = players.find((p) => p.id === playerId);
@@ -83,6 +85,8 @@ export default function Game() {
               </span>
             </div>
           )}
+
+          {/* <CountdownTimer turnEndTime={turnEndTime} /> */}
         </div>
 
         {me && (
@@ -97,6 +101,8 @@ export default function Game() {
       <div className="flex-1 flex">
         {/* Game Area */}
         <div className="flex-1 flex flex-col">
+          <CountdownTimer turnEndTime={turnEndTime} />
+
           {/* Opponents Row */}
           <div className="px-4 py-3">
             <div className="flex gap-2 flex-wrap justify-center max-w-3xl mx-auto">
