@@ -7,6 +7,8 @@ const socket = io(SERVER_URL, {
   reconnection: true,
   reconnectionAttempts: 5,
   reconnectionDelay: 1000,
+  withCredentials: true,
+  transports: ['websocket', 'polling'],
 });
 
 socket.on('connect', () => {
