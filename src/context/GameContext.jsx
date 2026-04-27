@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef } from 'react';
 import socket from '../socket';
 
 const GameContext = createContext(null);
@@ -19,6 +19,7 @@ const initialState = {
   isMyTurn: false,
   currentPlayerId: null,
   drawPileCount: 0,
+  explodingKittenCount: 0,
   discardPile: [],
   players: [],
   turnsRemaining: 0,
@@ -29,6 +30,7 @@ const initialState = {
   showFutureCards: null,
   showExplosion: false,
   notification: null,
+  toasts: [], // [{id, message, type, duration}]
 };
 
 function reducer(state, action) {
@@ -54,6 +56,7 @@ function reducer(state, action) {
         isMyTurn: gs.isMyTurn,
         currentPlayerId: gs.currentPlayerId,
         drawPileCount: gs.drawPileCount,
+        explodingKittenCount: gs.explodingKittenCount ?? state.explodingKittenCount,
         discardPile: gs.discardPile || [],
         players: gs.players || [],
         turnsRemaining: gs.turnsRemaining,
@@ -68,6 +71,10 @@ function reducer(state, action) {
       return { ...state, showExplosion: action.payload };
     case 'SET_NOTIFICATION':
       return { ...state, notification: action.payload };
+    case 'ADD_TOAST':
+      return { ...state, toasts: [...state.toasts, action.payload].slice(-5) };
+    case 'REMOVE_TOAST':
+      return { ...state, toasts: state.toasts.filter((t) => t.id !== action.payload) };
     case 'RESET':
       return { ...initialState, connected: state.connected, playerName: state.playerName };
     default:
@@ -75,8 +82,17 @@ function reducer(state, action) {
   }
 }
 
+let toastIdCounter = 0;
+
+function addToast(dispatch, message, type = 'info', duration = 3000) {
+  const id = ++toastIdCounter;
+  dispatch({ type: 'ADD_TOAST', payload: { id, message, type, duration } });
+  setTimeout(() => dispatch({ type: 'REMOVE_TOAST', payload: id }), duration);
+}
+
 export function GameProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const prevCurrentPlayerRef = useRef(null);
 
   useEffect(() => {
     socket.on('connect', () => {
@@ -94,6 +110,18 @@ export function GameProvider({ children }) {
 
     socket.on('game-started', (gameState) => {
       dispatch({ type: 'GAME_STARTED', payload: gameState });
+      // Show whose turn it is
+      const firstPlayer = gameState.players?.find((p) => p.id === gameState.currentPlayerId);
+      if (firstPlayer) {
+        const isMe = gameState.currentPlayerId === socket.id;
+        addToast(
+          dispatch,
+          isMe ? '🎯 Lượt của bạn! Chơi bài hoặc bốc bài.' : `🎯 Lượt của ${firstPlayer.name}`,
+          isMe ? 'your_turn' : 'turn',
+          3500
+        );
+      }
+      prevCurrentPlayerRef.current = gameState.currentPlayerId;
     });
 
     socket.on('game-state-updated', (gameState) => {
@@ -117,6 +145,7 @@ export function GameProvider({ children }) {
     socket.on('player-drew-ek', ({ playerId, hasDefuse }) => {
       dispatch({ type: 'SHOW_EXPLOSION', payload: true });
       setTimeout(() => dispatch({ type: 'SHOW_EXPLOSION', payload: false }), 800);
+      addToast(dispatch, '💥 Ai đó vừa bốc trúng Mèo Nổ!', 'danger', 3000);
     });
 
     socket.on('player-eliminated', ({ playerId, playerName }) => {
@@ -124,16 +153,18 @@ export function GameProvider({ children }) {
       setTimeout(() => dispatch({ type: 'SHOW_EXPLOSION', payload: false }), 800);
       dispatch({
         type: 'SET_NOTIFICATION',
-        payload: { type: 'elimination', message: `💀 ${playerName} has been eliminated!` },
+        payload: { type: 'elimination', message: `💀 ${playerName} đã bị loại!` },
       });
+      addToast(dispatch, `💀 ${playerName} đã bị nổ tung!`, 'danger', 4000);
       setTimeout(() => dispatch({ type: 'SET_NOTIFICATION', payload: null }), 3000);
     });
 
     socket.on('player-defused', ({ playerId, playerName }) => {
       dispatch({
         type: 'SET_NOTIFICATION',
-        payload: { type: 'defuse_success', message: `🛡️ ${playerName} defused the Exploding Kitten!` },
+        payload: { type: 'defuse_success', message: `🛡️ ${playerName} đã gỡ bom thành công!` },
       });
+      addToast(dispatch, `🛡️ ${playerName} đã gỡ bom!`, 'success', 3000);
       setTimeout(() => dispatch({ type: 'SET_NOTIFICATION', payload: null }), 3000);
     });
 
@@ -164,7 +195,36 @@ export function GameProvider({ children }) {
     };
   }, []);
 
-  // ======= Actions =======
+  // Detect turn changes and show toast
+  useEffect(() => {
+    if (state.phase !== 'playing') return;
+    if (!state.currentPlayerId) return;
+    if (prevCurrentPlayerRef.current === state.currentPlayerId) return;
+
+    prevCurrentPlayerRef.current = state.currentPlayerId;
+
+    const currentP = state.players.find((p) => p.id === state.currentPlayerId);
+    if (!currentP) return;
+
+    const isMe = state.currentPlayerId === state.playerId;
+    const ekCount = state.explodingKittenCount;
+    const deckSize = state.drawPileCount;
+    const riskPct = deckSize > 0 ? Math.round((ekCount / deckSize) * 100) : 0;
+
+    let riskMsg = '';
+    if (ekCount > 0 && deckSize > 0) {
+      riskMsg = ` | 💣 ${riskPct}% nguy hiểm`;
+    }
+
+    addToast(
+      dispatch,
+      isMe
+        ? `🎯 Lượt của bạn!${riskMsg}`
+        : `🎯 Lượt của ${currentP.name}${riskMsg}`,
+      isMe ? 'your_turn' : 'turn',
+      3500
+    );
+  }, [state.currentPlayerId, state.phase]);
 
   const createRoom = useCallback((name) => {
     return new Promise((resolve, reject) => {
