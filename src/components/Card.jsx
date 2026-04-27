@@ -50,57 +50,74 @@ export default function Card({ card, onClick, disabled, small, faceDown, classNa
         borderRadius: 12,
         position: 'relative',
         overflow: 'hidden',
+        boxShadow: meta.image ? '0 2px 6px rgba(0,0,0,0.5)' : 'none',
       }}
     >
-      {/* Shine effect */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -20,
-          left: -20,
-          width: 60,
-          height: 60,
-          background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
-
-      <span style={{ fontSize: small ? 20 : 32, lineHeight: 1 }}>{meta.emoji || '?'}</span>
-
-      <span
-        className="font-card text-center leading-tight"
-        style={{
-          fontSize: small ? 7 : 11,
-          color: meta.color || '#fff',
-          textShadow: `0 0 10px ${meta.color}44`,
-        }}
-      >
-        {meta.name || card?.type}
-      </span>
-
-      {!small && (
-        <span
-          className="text-center leading-tight opacity-60"
+      {meta.image ? (
+        <img
+          src={meta.image}
+          alt={meta.name}
           style={{
-            fontSize: 7,
-            color: '#ccc',
-            padding: '0 4px',
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            pointerEvents: 'none',
+            borderRadius: 6,
           }}
-        >
-          {meta.description}
-        </span>
-      )}
+        />
+      ) : (
+        <>
+          {/* Shine effect */}
+          <div
+            style={{
+              position: 'absolute',
+              top: -20,
+              left: -20,
+              width: 60,
+              height: 60,
+              background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)',
+              pointerEvents: 'none',
+            }}
+          />
 
-      {/* Inner border */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 4,
-          border: `1px solid ${meta.color || '#fff'}22`,
-          borderRadius: 8,
-          pointerEvents: 'none',
-        }}
-      />
+          <span style={{ fontSize: small ? 20 : 32, lineHeight: 1 }}>{meta.emoji || '?'}</span>
+
+          <span
+            className="font-card text-center leading-tight"
+            style={{
+              fontSize: small ? 7 : 11,
+              color: meta.color || '#fff',
+              textShadow: `0 0 10px ${meta.color}44`,
+            }}
+          >
+            {meta.name || card?.type}
+          </span>
+
+          {!small && (
+            <span
+              className="text-center leading-tight opacity-60"
+              style={{
+                fontSize: 7,
+                color: '#ccc',
+                padding: '0 4px',
+              }}
+            >
+              {meta.description}
+            </span>
+          )}
+
+          {/* Inner border */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 4,
+              border: `1px solid ${meta.color || '#fff'}22`,
+              borderRadius: 8,
+              pointerEvents: 'none',
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
