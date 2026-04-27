@@ -321,6 +321,7 @@ export function GameProvider({ children }) {
     favorResponse,
     stealTarget,
     dispatch,
+    toasts: state.toasts,
   };
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;

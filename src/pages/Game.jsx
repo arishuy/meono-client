@@ -24,6 +24,8 @@ export default function Game() {
     winner,
     notification,
     pendingAction,
+    toasts,
+    explodingKittenCount,
   } = useGame();
 
   const me = players.find((p) => p.id === playerId);
@@ -31,8 +33,30 @@ export default function Game() {
   const currentPlayer = players.find((p) => p.id === currentPlayerId);
   const winnerPlayer = players.find((p) => p.id === winner);
 
+  const riskPct = drawPileCount > 0 ? Math.round((explodingKittenCount / drawPileCount) * 100) : 0;
+
   return (
     <div className={`game-board min-h-screen flex flex-col relative ${showExplosion ? 'screen-shake' : ''}`}>
+      {/* Toast Container */}
+      <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 w-full max-w-sm px-4 pointer-events-none">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={`px-4 py-2 rounded-xl text-sm font-medium shadow-xl animate-dropdown whitespace-nowrap ${
+              t.type === 'danger'
+                ? 'bg-ek-red text-white'
+                : t.type === 'success'
+                ? 'bg-ek-green text-ek-darker'
+                : t.type === 'your_turn'
+                ? 'bg-ek-yellow text-ek-darker border-2 border-white'
+                : 'bg-ek-card text-white border border-white/10'
+            }`}
+          >
+            {t.message}
+          </div>
+        ))}
+      </div>
+
       {/* Explosion Flash */}
       {showExplosion && <div className="explosion-flash" />}
 
@@ -90,8 +114,13 @@ export default function Game() {
 
             <div className="flex flex-col items-center gap-2">
               <div className="text-4xl animate-float">🐱</div>
-              <div className="text-xs text-ek-muted text-center">
-                {drawPileCount} cards remaining
+              <div className="text-xs text-ek-muted text-center flex flex-col gap-1">
+                <span>{drawPileCount} cards remaining</span>
+                {explodingKittenCount > 0 && drawPileCount > 0 && (
+                  <span className="text-ek-red font-bold">
+                    💣 {riskPct}% danger
+                  </span>
+                )}
               </div>
             </div>
 

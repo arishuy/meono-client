@@ -40,6 +40,7 @@ export default {
         'bounce-in': 'bounceIn 0.5s ease-out',
         'spin-slow': 'spin 3s linear infinite',
         'wiggle': 'wiggle 0.3s ease-in-out',
+        'dropdown': 'dropdown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
       },
       keyframes: {
         pulseGlow: {
@@ -88,6 +89,10 @@ export default {
         wiggle: {
           '0%, 100%': { transform: 'rotate(-3deg)' },
           '50%': { transform: 'rotate(3deg)' },
+        },
+        dropdown: {
+          '0%': { transform: 'translateY(-20px) scale(0.9)', opacity: '0' },
+          '100%': { transform: 'translateY(0) scale(1)', opacity: '1' },
         },
       },
     },
